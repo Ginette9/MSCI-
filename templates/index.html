@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESG评级数据可视化平台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --secondary-color: #34a853;
+            --background-color: #f8f9fa;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --border-color: #dadce0;
+        }
+
+        body {
+            background-color: var(--background-color);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        .navbar {
+            background-color: white;
+            box-shadow: var(--card-shadow);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            height: 40px;
+            width: auto;
+        }
+
+        .main-title {
+            font-size: 1.5rem;
+            color: #202124;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            padding: 2rem 1rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 8px;
+            box-shadow: var(--card-shadow);
+            transition: transform 0.2s;
+            background-color: white;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #5f6368;
+            font-size: 0.9rem;
+        }
+
+        .form-select, .form-control {
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+
+        .btn-primary:hover {
+            background-color: #3367d6;
+        }
+
+        .chart-container {
+            min-height: 600px;
+            background-color: white;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .filter-section {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1rem;
+        }
+
+        .filter-section:last-child {
+            border-bottom: none;
+        }
+
+        .filter-section h5 {
+            color: #202124;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            background: white;
+            border: 1px solid var(--border-color);
+            color: #5f6368;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .action-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .select2-container--default .select2-selection--multiple {
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            min-height: 38px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            color: #202124;
+            padding: 2px 8px;
+            margin: 4px 4px 4px 0;
+            display: flex;
+            align-items: center;
+            order: -1;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #5f6368;
+            margin-right: 8px;
+            order: -1;
+            border: none;
+            background: none;
+            padding: 0;
+            font-size: 1.2em;
+            line-height: 1;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+            order: 0;
+            margin-left: 4px;
+        }
+
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--primary-color);
+        }
+
+        .select2-container--default .select2-results__option[aria-selected=true] {
+            background-color: #e8f0fe;
+            color: #202124;
+        }
+
+        .select2-container--default .select2-results__option[aria-selected=true]:before {
+            content: "✓";
+            margin-right: 5px;
+            color: var(--primary-color);
+        }
+
+        .dimension-filters {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .dimension-filters.hidden {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .chart-container {
+                min-height: 400px;
+            }
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .sort-options {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .sort-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            color: #5f6368;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .sort-btn:hover {
+            background: #f8f9fa;
+        }
+
+        .sort-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .sort-btn i {
+            font-size: 0.8em;
+        }
+
+        .chart-tooltip {
+            position: absolute;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+            box-shadow: var(--card-shadow);
+            z-index: 1000;
+            display: none;
+        }
+
+        .chart-tooltip button {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            cursor: pointer;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .chart-tooltip button:hover {
+            text-decoration: underline;
+        }
+
+        .hidden-element {
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="logo-container">
+                <img src="{{ url_for('static', filename='黑字透明logo.png') }}" alt="Logo" class="logo">
+                <h1 class="main-title">ESG评级数据可视化平台</h1>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-3">
+                <div class="card">
+                    <div class="card-body">
+                        <form id="chartForm">
+                            <div class="filter-section">
+                                <h5>图表设置</h5>
+                            <div class="mb-3">
+                                <label class="form-label">图表类型</label>
+                                <select class="form-select" name="chart_type" id="chartType" required>
+                                    <option value="bar">柱状图</option>
+                                    <option value="pie">饼图</option>
+                                    <option value="line">折线图</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                    <label class="form-label">指标维度</label>
+                                <select class="form-select" name="dimension" id="dimension" required>
+                                    {% for dim in filters.dimensions %}
+                                    <option value="{{ dim }}">{{ dim }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                                <div class="dimension-filters hidden" id="dimensionFilters">
+                                    <!-- 动态添加的维度筛选条件将在这里显示 -->
+                                </div>
+                            </div>
+
+                            <div class="filter-section">
+                                <h5>筛选条件</h5>
+                            <div class="mb-3">
+                                <label class="form-label">评级年份</label>
+                                    <select class="form-select" name="year[]" multiple>
+                                    {% for year in filters.years %}
+                                    <option value="{{ year }}">{{ year }}年</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">一级行业</label>
+                                    <select class="form-select" name="industry_l1[]" multiple>
+                                    {% for industry in filters.industries_l1 %}
+                                    <option value="{{ industry }}">{{ industry }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">评级变动</label>
+                                    <select class="form-select" name="rating_change[]" multiple>
+                                    {% for change in filters.rating_changes %}
+                                    <option value="{{ change }}">{{ change }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                    <label class="form-label">所属地区</label>
+                                    <select class="form-select" name="region[]" multiple>
+                                    {% for region in filters.regions %}
+                                    <option value="{{ region }}">{{ region }} ({{ filters.region_mapping.get(region, region) }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-chart-line"></i> 生成图表
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-9">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="chart-header">
+                            <h5 class="chart-title">图表展示</h5>
+                            <div class="sort-options">
+                                <button class="sort-btn" data-sort="asc">
+                                    <i class="fas fa-sort-amount-up"></i> 升序
+                                </button>
+                                <button class="sort-btn" data-sort="desc">
+                                    <i class="fas fa-sort-amount-down"></i> 降序
+                                </button>
+                            </div>
+                        </div>
+                        <div id="chart" class="chart-container"></div>
+                        <div class="chart-tooltip" id="chartTooltip">
+                            <button id="toggleElement">
+                                <i class="fas fa-eye-slash"></i> 隐藏此项
+                            </button>
+                        </div>
+                        <div class="chart-actions">
+                            <button id="downloadBtn" class="action-btn" style="display: none;">
+                                <i class="fas fa-download"></i> 下载图表
+                            </button>
+                            <button id="shareBtn" class="action-btn" style="display: none;">
+                                <i class="fas fa-share-alt"></i> 分享
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            // 初始化所有多选下拉框
+            $('select[multiple]').select2({
+                placeholder: '请选择',
+                allowClear: true,
+                width: '100%',
+                language: {
+                    noResults: function() {
+                        return "未找到匹配项";
+                    }
+                },
+                templateResult: formatOption,
+                templateSelection: formatSelection
+            });
+
+            // 自定义选项显示格式
+            function formatOption(option) {
+                if (!option.id) return option.text;
+                return $('<span>' + option.text + '</span>');
+            }
+
+            // 自定义选中项显示格式
+            function formatSelection(option) {
+                if (!option.id) return option.text;
+                return $('<span>' + option.text + '</span>');
+            }
+
+            // 监听指标维度变化
+            $('#dimension').on('change', function() {
+                const dimension = $(this).val();
+                const dimensionFilters = $('#dimensionFilters');
+                
+                // 清空现有的维度筛选条件
+                dimensionFilters.empty();
+                
+                // 根据选择的维度添加对应的筛选条件
+                if (dimension === '评级等级') {
+                    dimensionFilters.append(`
+                        <div class="mb-3">
+                            <label class="form-label">评级等级筛选</label>
+                            <select class="form-select" name="rating[]" multiple>
+                                {% for rating in filters.ratings %}
+                                <option value="{{ rating }}">{{ rating }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    `);
+                } else if (dimension === '一级行业') {
+                    dimensionFilters.append(`
+                        <div class="mb-3">
+                            <label class="form-label">一级行业筛选</label>
+                            <select class="form-select" name="industry_l1[]" multiple>
+                                {% for industry in filters.industries_l1 %}
+                                <option value="{{ industry }}">{{ industry }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    `);
+                } else if (dimension === '评级变动') {
+                    dimensionFilters.append(`
+                        <div class="mb-3">
+                            <label class="form-label">评级变动筛选</label>
+                            <select class="form-select" name="rating_change[]" multiple>
+                                {% for change in filters.rating_changes %}
+                                <option value="{{ change }}">{{ change }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    `);
+                } else if (dimension === '所属地区') {
+                    dimensionFilters.append(`
+                        <div class="mb-3">
+                            <label class="form-label">地区筛选</label>
+                            <select class="form-select" name="region[]" multiple>
+                                {% for region in filters.regions %}
+                                <option value="{{ region }}">{{ region }} ({{ filters.region_mapping.get(region, region) }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    `);
+                }
+                
+                // 显示或隐藏维度筛选区域
+                if (dimensionFilters.children().length > 0) {
+                    dimensionFilters.removeClass('hidden');
+                    // 初始化新添加的多选下拉框
+                    dimensionFilters.find('select').select2({
+                        placeholder: '请选择',
+                        allowClear: true,
+                        width: '100%',
+                        language: {
+                            noResults: function() {
+                                return "未找到匹配项";
+                            }
+                        },
+                        templateResult: formatOption,
+                        templateSelection: formatSelection
+                    });
+                } else {
+                    dimensionFilters.addClass('hidden');
+                }
+
+                // 从筛选条件中移除当前选中的维度
+                const currentDimension = $(this).val();
+                $('.filter-section select[multiple]').each(function() {
+                    const $select = $(this);
+                    const name = $select.attr('name');
+                    if (name && name.includes(currentDimension.toLowerCase())) {
+                        $select.closest('.mb-3').hide();
+                    } else {
+                        $select.closest('.mb-3').show();
+                    }
+                });
+            });
+
+            // 图表类型变化时处理评级时间选项
+            $('#chartType').on('change', function() {
+                const chartType = $(this).val();
+                const dimensionSelect = $('#dimension');
+                const timeOption = dimensionSelect.find('option[value="评级时间"]');
+                
+                if (chartType === 'line' && timeOption.length === 0) {
+                    dimensionSelect.append('<option value="评级时间">评级时间</option>');
+                }
+                else if (chartType !== 'line' && timeOption.length > 0) {
+                timeOption.remove();
+            }
+        });
+
+            let currentChartData = null;
+            let hiddenElements = new Set();
+            const tooltip = $('#chartTooltip');
+            let currentPoint = null;
+
+            // 图表点击事件处理
+            $('#chart').on('plotly_click', function(event) {
+                if (!event.points || event.points.length === 0) return;
+                
+                const point = event.points[0];
+                currentPoint = point;
+                
+                // 显示工具提示
+                const x = event.event.clientX;
+                const y = event.event.clientY;
+                tooltip.css({
+                    left: x + 'px',
+                    top: y + 'px',
+                    display: 'block'
+                });
+
+                // 更新按钮文本
+                const isHidden = hiddenElements.has(point.pointNumber);
+                $('#toggleElement i')
+                    .removeClass('fa-eye-slash fa-eye')
+                    .addClass(isHidden ? 'fa-eye' : 'fa-eye-slash');
+                $('#toggleElement').text(isHidden ? ' 显示此项' : ' 隐藏此项');
+            });
+
+            // 点击其他地方隐藏工具提示
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('#chartTooltip').length && 
+                    !$(e.target).closest('.js-plotly-plot').length) {
+                    tooltip.hide();
+                }
+            });
+
+            // 切换元素显示状态
+            $('#toggleElement').on('click', function() {
+                if (!currentPoint) return;
+
+                const pointNumber = currentPoint.pointNumber;
+                if (hiddenElements.has(pointNumber)) {
+                    hiddenElements.delete(pointNumber);
+                } else {
+                    hiddenElements.add(pointNumber);
+                }
+
+                updateChartVisibility();
+                tooltip.hide();
+            });
+
+            // 更新图表可见性
+            function updateChartVisibility() {
+                if (!currentChartData) return;
+
+                const chartData = JSON.parse(JSON.stringify(currentChartData));
+                const data = chartData.data[0];
+
+                // 更新可见性
+                if (data.type === 'pie') {
+                    data.opacity = data.labels.map((_, i) => 
+                        hiddenElements.has(i) ? 0.3 : 1
+                    );
+                } else {
+                    data.opacity = data.x.map((_, i) => 
+                        hiddenElements.has(i) ? 0.3 : 1
+                    );
+                }
+
+                // 更新图表
+                Plotly.newPlot('chart', chartData.data, chartData.layout);
+            }
+
+            // 排序按钮点击事件
+            $('.sort-btn').on('click', function() {
+                const sortType = $(this).data('sort');
+                $('.sort-btn').removeClass('active');
+                $(this).addClass('active');
+                
+                if (currentChartData) {
+                    sortChart(sortType);
+                }
+            });
+
+            // 排序图表数据
+            function sortChart(sortType) {
+                const chartData = JSON.parse(JSON.stringify(currentChartData));
+                const data = chartData.data[0];
+                
+                // 创建排序索引
+                const indices = Array.from({length: data.x.length}, (_, i) => i);
+                indices.sort((a, b) => {
+                    if (sortType === 'asc') {
+                        return data.y[a] - data.y[b];
+                    } else {
+                        return data.y[b] - data.y[a];
+                    }
+                });
+
+                // 重新排序数据
+                data.x = indices.map(i => data.x[i]);
+                data.y = indices.map(i => data.y[i]);
+                if (data.text) {
+                    data.text = indices.map(i => data.text[i]);
+                }
+
+                // 更新图表
+                Plotly.newPlot('chart', chartData.data, chartData.layout);
+            }
+
+            // 修改表单提交处理
+            $('#chartForm').on('submit', async function(e) {
+            e.preventDefault();
+            const formData = {
+                    chart_type: $('#chartType').val(),
+                    dimension: $('#dimension').val(),
+                filters: {
+                        year: $('select[name="year[]"]').val() || [],
+                        industry_l1: $('select[name="industry_l1[]"]').val() || [],
+                        rating_change: $('select[name="rating_change[]"]').val() || [],
+                        region: $('select[name="region[]"]').val() || [],
+                        rating: $('select[name="rating[]"]').val() || []
+                }
+            };
+
+            try {
+                const response = await fetch('/generate_chart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                        currentChartData = JSON.parse(data.chart_data);
+                        hiddenElements.clear();
+                        Plotly.newPlot('chart', currentChartData.data, currentChartData.layout);
+                        $('#downloadBtn, #shareBtn').show();
+                        // 重置排序按钮状态
+                        $('.sort-btn').removeClass('active');
+                } else {
+                    alert('生成图表失败：' + data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('发生错误，请稍后重试');
+            }
+        });
+
+            // 下载图表
+            $('#downloadBtn').on('click', function() {
+            Plotly.downloadImage('chart', {
+                format: 'png',
+                filename: 'esg_chart',
+                width: 1200,
+                height: 800
+            });
+            });
+
+            // 分享功能
+            $('#shareBtn').on('click', function() {
+                alert('分享功能开发中...');
+            });
+
+            // 初始隐藏与当前维度相同的筛选条件
+            $('#dimension').trigger('change');
+        });
+    </script>
+</body>
+</html> 

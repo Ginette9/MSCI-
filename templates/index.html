@@ -98,9 +98,17 @@
 
         .chart-container {
             min-height: 600px;
+            max-height: 800px;
+            height: 600px;
             background-color: white;
             border-radius: 8px;
             padding: 1rem;
+            overflow: hidden;
+        }
+
+        .js-plotly-plot {
+            height: 100% !important;
+            width: 100% !important;
         }
 
         .filter-section {
@@ -299,24 +307,24 @@
                         <form id="chartForm">
                             <div class="filter-section">
                                 <h5>图表设置</h5>
-                            <div class="mb-3">
-                                <label class="form-label">图表类型</label>
-                                <select class="form-select" name="chart_type" id="chartType" required>
-                                    <option value="bar">柱状图</option>
-                                    <option value="pie">饼图</option>
-                                    <option value="line">折线图</option>
-                                </select>
-                            </div>
+                                <div class="mb-3">
+                                    <label class="form-label">图表类型</label>
+                                    <select class="form-select" name="chart_type" id="chartType" required>
+                                        <option value="bar">柱状图</option>
+                                        <option value="pie">饼图</option>
+                                        <option value="line">折线图</option>
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
+                                <div class="mb-3">
                                     <label class="form-label">指标维度</label>
-                                <select class="form-select" name="dimension" id="dimension" required>
-                                    {% for dim in filters.dimensions %}
-                                    <option value="{{ dim }}">{{ dim }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            
+                                    <select class="form-select" name="dimension" id="dimension" required>
+                                        {% for dim in filters.dimensions %}
+                                        <option value="{{ dim }}">{{ dim }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
                                 <div class="dimension-filters hidden" id="dimensionFilters">
                                     <!-- 动态添加的维度筛选条件将在这里显示 -->
                                 </div>
@@ -324,41 +332,50 @@
 
                             <div class="filter-section">
                                 <h5>筛选条件</h5>
-                            <div class="mb-3">
-                                <label class="form-label">评级年份</label>
+                                <div class="mb-3">
+                                    <label class="form-label">评级年份</label>
                                     <select class="form-select" name="year[]" multiple>
-                                    {% for year in filters.years %}
-                                    <option value="{{ year }}">{{ year }}年</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                                        {% for year in filters.years %}
+                                        <option value="{{ year }}">{{ year }}年</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">一级行业</label>
+                                <div class="mb-3" id="industryFilter">
+                                    <label class="form-label">一级行业</label>
                                     <select class="form-select" name="industry_l1[]" multiple>
-                                    {% for industry in filters.industries_l1 %}
-                                    <option value="{{ industry }}">{{ industry }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                                        {% for industry in filters.industries_l1 %}
+                                        <option value="{{ industry }}">{{ industry }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
-                                <label class="form-label">评级变动</label>
+                                <div class="mb-3" id="ratingChangeFilter">
+                                    <label class="form-label">评级变动</label>
                                     <select class="form-select" name="rating_change[]" multiple>
-                                    {% for change in filters.rating_changes %}
-                                    <option value="{{ change }}">{{ change }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                                        {% for change in filters.rating_changes %}
+                                        <option value="{{ change }}">{{ change }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
 
-                            <div class="mb-3">
+                                <div class="mb-3" id="regionFilter">
                                     <label class="form-label">所属地区</label>
                                     <select class="form-select" name="region[]" multiple>
-                                    {% for region in filters.regions %}
-                                    <option value="{{ region }}">{{ region }} ({{ filters.region_mapping.get(region, region) }})</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
+                                        {% for region in filters.regions %}
+                                        <option value="{{ region }}">{{ region }} ({{ filters.region_mapping.get(region, region) }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mb-3" id="ratingFilter">
+                                    <label class="form-label">评级等级</label>
+                                    <select class="form-select" name="rating[]" multiple>
+                                        {% for rating in filters.ratings %}
+                                        <option value="{{ rating }}">{{ rating }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
                             </div>
 
                             <button type="submit" class="btn btn-primary w-100">
@@ -506,17 +523,31 @@
                     dimensionFilters.addClass('hidden');
                 }
 
-                // 从筛选条件中移除当前选中的维度
+                // 根据选择的维度隐藏对应的筛选条件
                 const currentDimension = $(this).val();
-                $('.filter-section select[multiple]').each(function() {
-                    const $select = $(this);
-                    const name = $select.attr('name');
-                    if (name && name.includes(currentDimension.toLowerCase())) {
-                        $select.closest('.mb-3').hide();
-                    } else {
-                        $select.closest('.mb-3').show();
-                    }
-                });
+                if (currentDimension === '一级行业') {
+                    $('#industryFilter').hide();
+                } else {
+                    $('#industryFilter').show();
+                }
+                
+                if (currentDimension === '评级变动') {
+                    $('#ratingChangeFilter').hide();
+                } else {
+                    $('#ratingChangeFilter').show();
+                }
+                
+                if (currentDimension === '所属地区') {
+                    $('#regionFilter').hide();
+                } else {
+                    $('#regionFilter').show();
+                }
+
+                if (currentDimension === '评级等级') {
+                    $('#ratingFilter').hide();
+                } else {
+                    $('#ratingFilter').show();
+                }
             });
 
             // 图表类型变化时处理评级时间选项
